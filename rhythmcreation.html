@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Ostinato 節奏大師 - 遊戲化升級版</title>
+
+<!-- 原有的截圖庫 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<!-- 新增：讓 iPad 支援 HTML5 拖拉的 Polyfill -->
+<script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
+
 <style>
   /* 遊戲化糖果色系變數 */
   :root { 
@@ -93,6 +99,7 @@
     min-width: 95px; width: 95px; height: 120px; background-color: white; 
     border: 3px solid #dfe4ea; border-radius: 18px; cursor: grab; 
     box-shadow: 0 6px 0 #dfe4ea; flex-shrink: 0; transition: all 0.2s;
+    touch-action: none; /* 確保觸控拖拉時不會觸發畫面捲動 */
   }
   .library-card:hover { transform: translateY(-5px); box-shadow: 0 11px 0 #dfe4ea; border-color: var(--primary-color); }
   .library-card:active { transform: translateY(6px); box-shadow: 0 0px 0 #dfe4ea; }
