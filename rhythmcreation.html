@@ -260,21 +260,33 @@
       if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    function playMarimba(time) {
+    // 1. 更新發聲函數，加入 duration (時值長度) 參數
+    function playMarimba(time, duration) {
       if(!audioCtx) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
+      
+      // 使用 sine (正弦波) 或 triangle (三角波) 可以讓持續音聽起來更清晰
       osc.type = 'sine'; 
-      osc.frequency.setValueAtTime(523.25, time); 
+      osc.frequency.setValueAtTime(523.25, time); // 預設音高 C5
+
+      // 根據時值 (ADSR Envelope) 動態調整聲音長度
       gain.gain.setValueAtTime(0, time);
-      gain.gain.linearRampToValueAtTime(0.8, time + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+      gain.gain.linearRampToValueAtTime(0.6, time + 0.02); // 快速起音 (Attack)
+      
+      // 保持音量直到時值接近結束 (Sustain)
+      gain.gain.setValueAtTime(0.6, time + Math.max(0.02, duration - 0.05)); 
+      
+      // 根據時值精準收音 (Release)
+      gain.gain.linearRampToValueAtTime(0.001, time + duration); 
+
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start(time);
-      osc.stop(time + 0.5);
+      osc.stop(time + duration);
     }
 
+    // 2. 更新播放邏輯，精準計算每個音符的時長
     function playRhythm() {
       if (isPlaying) return;
       initAudio();
@@ -287,6 +299,7 @@
 
       measures.forEach(measure => {
         const notes = measure.querySelectorAll('.note-element');
+
         notes.forEach(note => {
           const noteBeats = parseFloat(note.dataset.beats);
           const noteStartTime = startTime + (currentBeatOffset * beatDuration);
@@ -298,13 +311,21 @@
           playTimeouts.push(t1, t2);
 
           const pattern = JSON.parse(note.dataset.pattern);
-          pattern.forEach(fraction => {
+          pattern.forEach((fraction, index) => {
             const hitTime = noteStartTime + (fraction * noteBeats * beatDuration);
-            playMarimba(hitTime);
+            
+            // 新增邏輯：計算這個發聲點的實際時長 (Duration)
+            // 如果是該音符的最後一次發聲，時長計算到音符結尾；否則計算到下一個發聲點
+            const nextFraction = (index + 1 < pattern.length) ? pattern[index + 1] : 1;
+            const hitDuration = (nextFraction - fraction) * noteBeats * beatDuration;
+
+            // 將計算好的時長傳入
+            playMarimba(hitTime, hitDuration);
           });
 
           currentBeatOffset += noteBeats;
         });
+
         let used = 0;
         notes.forEach(n => used += parseFloat(n.dataset.beats));
         currentBeatOffset += (parseFloat(measure.dataset.capacity) - used);
@@ -314,6 +335,7 @@
       const endTimer = setTimeout(() => { isPlaying = false; }, totalDuration + 200);
       playTimeouts.push(endTimer);
     }
+
 
     function stopRhythm() {
       isPlaying = false;
